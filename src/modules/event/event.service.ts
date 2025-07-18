@@ -103,24 +103,41 @@ export class EventService {
         }
     }
 
-    async getFirstPageOfMetrics(): Promise<{
+    async getAllMetrics(): Promise<{
         success: boolean;
         total: number;
         data: KlaviyoMetric[];
     }> {
-        try {
-            const response = await axiosKlaviyo.get('metrics/', {
-                headers: {
-                    Authorization: `Klaviyo-API-Key ${this.apiKey}`,
-                },
-            });
+        const allMetrics: KlaviyoMetric[] = [];
+        let nextCursor: string | null = null;
 
-            const data = response.data?.data || [];
+        try {
+            do {
+                const params: Record<string, string> = {};
+                if (nextCursor) {
+                    params['page[cursor]'] = nextCursor;
+                }
+
+                const response = await axiosKlaviyo.get('metrics/', {
+                    headers: {
+                        Authorization: `Klaviyo-API-Key ${this.apiKey}`,
+                    },
+                    params,
+                });
+
+                const currentData: KlaviyoMetric[] = response.data?.data || [];
+                allMetrics.push(...currentData);
+
+                const nextLink = response.data?.links?.next;
+                nextCursor = nextLink
+                    ? new URL(nextLink).searchParams.get('page[cursor]')
+                    : null;
+            } while (nextCursor);
 
             return {
                 success: true,
-                total: data.length,
-                data,
+                total: allMetrics.length,
+                data: allMetrics,
             };
         } catch (error) {
             console.error('[Klaviyo Metrics Error]', JSON.stringify(error?.response?.data, null, 2));
@@ -130,6 +147,7 @@ export class EventService {
             );
         }
     }
+
 
 
 }
