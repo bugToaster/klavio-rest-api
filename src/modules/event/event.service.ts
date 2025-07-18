@@ -454,5 +454,45 @@ export class EventService {
         }
     }
 
+    async getProfileMetricsByEmail(email: string): Promise<{
+        email: string;
+        totalEvents: number;
+        metricSummary: Record<string, number>;
+    }> {
+        try {
+            const allMetrics = await this.getAllMetrics();
+            const metricsMap = new Map<string, string>();
+            for (const metric of allMetrics.data) {
+                metricsMap.set(metric.id, metric.attributes?.name || 'Unknown');
+            }
+
+            const allEvents = await this.getAllEvents({});
+
+            const filtered = allEvents.filter(e => e.profileEmail === email);
+
+            const summary: Record<string, number> = {};
+            for (const event of filtered) {
+                const metricId = event.attributes?.metric_id;
+                const name = metricsMap.get(metricId) || 'Unknown';
+                summary[name] = (summary[name] || 0) + 1;
+            }
+
+            return {
+                email,
+                totalEvents: filtered.length,
+                metricSummary: summary
+            };
+        } catch (err: any) {
+            this.logger.error('getProfileMetricsByEmail() failed:', err);
+            throw new HttpException(
+                {
+                    success: false,
+                    message: 'Failed to get profile metrics',
+                    error: err?.response?.data || err.message
+                },
+                err?.response?.status || 500
+            );
+        }
+    }
 
 }

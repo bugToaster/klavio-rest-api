@@ -102,4 +102,15 @@ export class EventController {
     }
 
 
+    @Get('profile-metrics')
+    @ApiOperation({ summary: 'Get metric summary for a profile by email' })
+    @ApiQuery({ name: 'email', type: String, required: true })
+    @ApiResponse({ status: 200, description: 'Metric summary returned' })
+    @ApiResponse({ status: 404, description: 'Profile not found' })
+    @ApiResponse({ status: 500, description: 'Error fetching metrics' })
+    async getProfileMetrics(@Query('email') email: string) {
+        return this.eventService.getProfileMetricsByEmail(email);
+    }
+
+
 }
