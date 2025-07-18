@@ -7,10 +7,6 @@ import {KlaviyoMetric} from './interfaces/klaviyo-metric.interface';
 import { MetricEmailSummary } from './interfaces/metric-email-summary.interface';
 
 
-
-
-
-
 @Injectable()
 export class EventService {
     private readonly apiKey = process.env.KLAVIYO_PRIVATE_API_KEY;
@@ -108,11 +104,7 @@ export class EventService {
         }
     }
 
-    async getAllMetrics(): Promise<{
-        success: boolean;
-        total: number;
-        data: KlaviyoMetric[];
-    }> {
+    async getAllMetrics(): Promise<{ success: boolean; total: number; data: KlaviyoMetric[]; }> {
         const allMetrics: KlaviyoMetric[] = [];
         let nextCursor: string | null = null;
 
@@ -160,11 +152,7 @@ export class EventService {
     }
 
 
-    async getAllEvents(params: {
-        metricId?: string;
-        startDate?: string; // YYYY-MM-DD
-        endDate?: string;   // YYYY-MM-DD
-    }): Promise<any[]> {
+    async getAllEvents(params: { metricId?: string; startDate?: string; endDate?: string; }): Promise<any[]> {
         const { metricId, startDate, endDate } = params;
         const allEvents: any[] = [];
         const profileCache: Record<string, string | null> = {}; // profileId -> email
@@ -358,7 +346,6 @@ export class EventService {
             };
         }
     }
-
 
 
     async getEventsByEmailAndDate(email: string, date: string) {
