@@ -90,4 +90,16 @@ export class EventController {
     ) {
         return this.eventService.getEventsByEmailAndDate(email, date);
     }
+
+    @Get('profile-by-email')
+    @ApiOperation({ summary: 'Get Klaviyo profile attributes by email' })
+    @ApiQuery({ name: 'email', type: String, required: true })
+    @ApiResponse({ status: 200, description: 'Profile attributes returned' })
+    @ApiResponse({ status: 404, description: 'Profile not found' })
+    @ApiResponse({ status: 500, description: 'Error fetching profile' })
+    async getProfileByEmail(@Query('email') email: string) {
+        return this.eventService.getProfileByEmail(email);
+    }
+
+
 }

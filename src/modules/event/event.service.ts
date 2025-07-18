@@ -419,6 +419,40 @@ export class EventService {
         }
     }
 
+    async getProfileByEmail(email: string): Promise<any> {
+        try {
+            const res = await axiosKlaviyo.get('profiles/', {
+                headers: {
+                    Authorization: `Klaviyo-API-Key ${this.apiKey}`
+                },
+                params: {
+                    filter: `equals(email,"${email}")`
+                }
+            });
+
+            const profile = res.data?.data?.[0] ?? null;
+
+            if (!profile) {
+                throw new HttpException(`No profile found for email: ${email}`, 404);
+            }
+
+            return {
+                success: true,
+                email,
+                profileAttributes: profile.attributes
+            };
+
+        } catch (err: any) {
+            this.logger.error(`Failed to fetch profile for ${email}`, err?.response?.data || err.message);
+            throw new HttpException(
+                {
+                    message: 'Failed to fetch profile',
+                    error: err?.response?.data || err.message
+                },
+                err?.response?.status || 500
+            );
+        }
+    }
 
 
 }
