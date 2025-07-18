@@ -5,6 +5,10 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 
 import { EventModule } from './modules/event/event.module';
+import { MetricModule } from './modules/metric/metric.module';
+import { ProfileModule } from './modules/profile/profile.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+
 
 @Module({
   imports: [
@@ -12,7 +16,8 @@ import { EventModule } from './modules/event/event.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    DatabaseModule, EventModule],
+    DatabaseModule, EventModule, MetricModule, ProfileModule, AnalyticsModule],
+  exports: [EventModule, MetricModule, ProfileModule, AnalyticsModule],
   controllers: [AppController],
   providers: [AppService],
 })
