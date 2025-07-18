@@ -1,0 +1,56 @@
+# ─── Node Package Managers ─────────────────────────────
+node_modules/
+.pnpm/
+.pnp.*
+.npm/
+.npmrc
+.pnpm-debug.log*
+
+# ─── Dist / Build ──────────────────────────────────────
+dist/
+build/
+.cache/
+
+# ─── Logs ──────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ─── TypeScript ────────────────────────────────────────
+*.tsbuildinfo
+
+# ─── Environment ───────────────────────────────────────
+.env
+.env.*
+!.env.example
+!.env.test.example
+
+# ─── IDEs ───────────────────────────────────────────────
+# VSCode
+.vscode/
+.vscode-test/
+
+# JetBrains IDEs (WebStorm, IntelliJ)
+.idea/
+*.iml
+*.iws
+out/
+.idea_modules/
+
+# ─── OS-specific ───────────────────────────────────────
+.DS_Store        # macOS
+Thumbs.db        # Windows
+
+# ─── Coverage / Test / Reports ─────────────────────────
+coverage/
+test-output/
+jest-*.json
+.nyc_output/
+
+# ─── Migrations / Seeds (if compiled) ──────────────────
+**/*.js.map
+src/database/migrations/*.js
+src/database/seeders/*.js
