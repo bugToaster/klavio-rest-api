@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -27,5 +27,14 @@ export class EventController {
     async createBulkEvents(@Body() dto: CreateBulkEventDto) {
         this.logger.log(`Sending ${dto.events.length} events in bulk`);
         return this.eventService.createBulkEvents(dto);
+    }
+
+    @Get('metrics')
+    @ApiOperation({ summary: 'Get all Klaviyo metrics (event names)' })
+    @ApiResponse({ status: 200, description: 'List of available metrics from Klaviyo' })
+    @ApiResponse({ status: 500, description: 'Klaviyo service unavailable or request failed' })
+    async getAllMetrics() {
+        this.logger.log('Fetching all Klaviyo metrics');
+        return this.eventService.getAllMetrics();
     }
 }

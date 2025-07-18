@@ -99,4 +99,27 @@ export class EventService {
             throw error;
         }
     }
+
+    async getAllMetrics() {
+        try {
+            const response = await axiosKlaviyo.get('metrics/', {
+                headers: {
+                    Authorization: `Klaviyo-API-Key ${this.apiKey}`,
+                },
+            });
+
+            return {
+                success: true,
+                metrics: response.data,
+            };
+        } catch (error) {
+            console.error('[Klaviyo Metric Error]', JSON.stringify(error?.response?.data, null, 2));
+            throw new HttpException(
+                error?.response?.data || 'Failed to fetch metrics from Klaviyo',
+                error?.response?.status || 500,
+            );
+        }
+    }
+
+
 }
