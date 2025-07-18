@@ -1,9 +1,10 @@
 import * as dotenv from 'dotenv';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import {KlaviyoEventLog} from '../modules/event/entities/klaviyo-event-log.entity'
 
 const commonConfig = {
-  entities: [],
-  synchronize: process.env.APPLICATION_MODE ==='dev' ? true : false,
+  entities: [KlaviyoEventLog],
+  synchronize: process.env.APPLICATION_MODE === 'dev',
   autoLoadEntities: true,
   logging: true,
 };

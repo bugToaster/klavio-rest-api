@@ -1,16 +1,44 @@
 import { Injectable, HttpException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, LessThan, Repository } from 'typeorm';
+import { KlaviyoEventLog } from './entities/klaviyo-event-log.entity';
 import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
-import { axiosKlaviyo } from '../../common/axios-instance';
+import { BulkEventResult } from '../interfaces/bulk-event-result.interface';
+import { axiosKlaviyo } from '@/common/axios-instance';
 
 @Injectable()
 export class EventService {
     private readonly apiKey = process.env.KLAVIYO_PRIVATE_API_KEY;
     private readonly logger = new Logger(EventService.name);
 
+    constructor(
+        @InjectRepository(KlaviyoEventLog)
+        private readonly eventLogRepo: Repository<KlaviyoEventLog>,
+        private readonly dataSource: DataSource,
+    ) {}
+
     async createEvent(dto: CreateEventDto) {
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
         try {
+            await queryRunner.manager.save(KlaviyoEventLog, {
+                eventName: dto.eventName,
+                eventAttributes: dto.eventAttributes,
+                profileAttributes: dto.profileAttributes,
+            });
+
             const data = await this._sendToKlaviyo(dto);
+
+            const threshold = new Date();
+            threshold.setDate(threshold.getDate() - 7);
+            await queryRunner.manager.delete(KlaviyoEventLog, {
+                createdAt: LessThan(threshold),
+            });
+
+            await queryRunner.commitTransaction();
 
             return {
                 success: true,
@@ -20,6 +48,7 @@ export class EventService {
                 response: data,
             };
         } catch (error) {
+            await queryRunner.rollbackTransaction();
             const errResponse = error?.response?.data ?? error.message;
             this.logger.error(`Failed to send event: ${dto.eventName}`, error);
             throw new HttpException(
@@ -30,17 +59,18 @@ export class EventService {
                 },
                 error?.response?.status || 500,
             );
+        } finally {
+            await queryRunner.release();
         }
     }
 
-    async createBulkEvents(dto: CreateBulkEventDto) {
-        const results: {
-            success: boolean;
-            eventName: string;
-            profile: Record<string, any>;
-            data?: any;
-            error?: any;
-        }[] = [];
+    async createBulkEvents(dto: CreateBulkEventDto): Promise<{
+        total: number;
+        successCount: number;
+        failedCount: number;
+        results: BulkEventResult[];
+    }> {
+        const results: BulkEventResult[] = [];
 
         for (const event of dto.events) {
             try {
@@ -65,8 +95,8 @@ export class EventService {
 
         return {
             total: dto.events.length,
-            successCount: results.filter((r) => r.success).length,
-            failedCount: results.filter((r) => !r.success).length,
+            successCount: results.filter(r => r.success).length,
+            failedCount: results.filter(r => !r.success).length,
             results,
         };
     }
@@ -82,7 +112,6 @@ export class EventService {
                             metric: { name: dto.eventName },
                             profile: dto.profileAttributes,
                             properties: dto.eventAttributes || {},
-                            // timestamp removed — not allowed by Klaviyo
                         },
                     },
                 },
@@ -92,7 +121,6 @@ export class EventService {
                     },
                 },
             );
-
             return response.data;
         } catch (error) {
             console.error('[Klaviyo Error]', JSON.stringify(error?.response?.data, null, 2));
