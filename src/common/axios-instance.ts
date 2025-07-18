@@ -1,38 +1,37 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import axiosRetry from 'axios-retry';
 
-// Create axios instance
+// Create a custom axios instance for Klaviyo
 const axiosKlaviyo = axios.create({
     baseURL: 'https://a.klaviyo.com/api/',
     headers: {
         'Content-Type': 'application/json',
         revision: '2023-06-15',
     },
-    timeout: 5000,
+    timeout: 50000, // ms
 });
 
-// Retry logic
+// Add retry logic
 axiosRetry(axiosKlaviyo, {
     retries: 3,
-    retryDelay: (retryCount) => retryCount * 1000,
-    retryCondition: (error) => {
-        const status: number | undefined = error?.response?.status;
+    retryDelay: (retryCount: number) => retryCount * 1000, // 1s, 2s, 3s
+    retryCondition: (error: AxiosError) => {
+        const status = error.response?.status;
 
-        // Retry if:
-        // - Network error (ECONNRESET, ENOTFOUND, etc.)
-        // - 5xx errors
-        // - 429 (rate limit)
-        // - or status is undefined (network failure)
         return (
-            axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-            status === 429 ||
-            (typeof status === 'number' && status >= 500) ||
-            typeof status === 'undefined'
+            axiosRetry.isNetworkError(error) || // ECONNRESET, ETIMEDOUT, etc.
+            status === 429 || // Too many requests
+            (typeof status === 'number' && status >= 500) || // Server errors
+            typeof status === 'undefined' // No response
         );
     },
-    onRetry: (retryCount, error) => {
-        const status = error?.response?.status;
-        console.log(`[Retry] Attempt ${retryCount} - Status: ${status ?? 'N/A'} - Message: ${error.message}`);
+    onRetry: (retryCount: number, error: AxiosError) => {
+        const status = error.response?.status;
+        const url = error.config?.url ?? 'unknown URL';
+
+        console.warn(
+            `[axios-retry] Retry #${retryCount} for ${url} - Status: ${status ?? 'N/A'} - ${error.message}`
+        );
     },
 });
 
