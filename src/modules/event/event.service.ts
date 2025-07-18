@@ -1,7 +1,10 @@
-import { Injectable, HttpException, Logger } from '@nestjs/common';
-import { CreateEventDto } from './dto/create-event.dto';
-import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
-import { axiosKlaviyo } from '../../common/axios-instance';
+import {Injectable, HttpException, Logger} from '@nestjs/common';
+import {CreateEventDto} from './dto/create-event.dto';
+import {CreateBulkEventDto} from './dto/create-bulk-event.dto';
+
+import {axiosKlaviyo} from '@/common/axios-instance';
+import {KlaviyoMetric} from './interfaces/klaviyo-metric.interface';
+
 
 @Injectable()
 export class EventService {
@@ -79,7 +82,7 @@ export class EventService {
                     data: {
                         type: 'event',
                         attributes: {
-                            metric: { name: dto.eventName },
+                            metric: {name: dto.eventName},
                             profile: dto.profileAttributes,
                             properties: dto.eventAttributes || {},
                             // timestamp removed — not allowed by Klaviyo
@@ -100,7 +103,11 @@ export class EventService {
         }
     }
 
-    async getAllMetrics() {
+    async getFirstPageOfMetrics(): Promise<{
+        success: boolean;
+        total: number;
+        data: KlaviyoMetric[];
+    }> {
         try {
             const response = await axiosKlaviyo.get('metrics/', {
                 headers: {
@@ -108,12 +115,15 @@ export class EventService {
                 },
             });
 
+            const data = response.data?.data || [];
+
             return {
                 success: true,
-                metrics: response.data,
+                total: data.length,
+                data,
             };
         } catch (error) {
-            console.error('[Klaviyo Metric Error]', JSON.stringify(error?.response?.data, null, 2));
+            console.error('[Klaviyo Metrics Error]', JSON.stringify(error?.response?.data, null, 2));
             throw new HttpException(
                 error?.response?.data || 'Failed to fetch metrics from Klaviyo',
                 error?.response?.status || 500,

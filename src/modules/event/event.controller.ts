@@ -1,8 +1,9 @@
-import { Controller, Post, Get, Body, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Logger } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { EventService } from './event.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { CreateBulkEventDto } from './dto/create-bulk-event.dto';
+
 
 @ApiTags('Events')
 @Controller('events')
@@ -30,11 +31,12 @@ export class EventController {
     }
 
     @Get('metrics')
-    @ApiOperation({ summary: 'Get all Klaviyo metrics (event names)' })
-    @ApiResponse({ status: 200, description: 'List of available metrics from Klaviyo' })
-    @ApiResponse({ status: 500, description: 'Klaviyo service unavailable or request failed' })
+    @ApiOperation({ summary: 'Fetch all metrics from Klaviyo (auto-paginated)' })
+    @ApiResponse({ status: 200, description: 'All Klaviyo metrics retrieved' })
+    @ApiResponse({ status: 500, description: 'Failed to fetch metrics' })
     async getAllMetrics() {
-        this.logger.log('Fetching all Klaviyo metrics');
+        this.logger.log('Fetching all Klaviyo metrics...');
         return this.eventService.getAllMetrics();
     }
+
 }
