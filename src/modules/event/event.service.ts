@@ -32,11 +32,16 @@ export class EventService {
 
             const data = await this._sendToKlaviyo(dto);
 
-            const threshold = new Date();
-            threshold.setDate(threshold.getDate() - 7);
-            await queryRunner.manager.delete(KlaviyoEventLog, {
-                createdAt: LessThan(threshold),
-            });
+            /*
+            * Commented out this block to move the logic into a scheduled cron job
+            * */
+
+
+            // const threshold = new Date();
+            // threshold.setDate(threshold.getDate() - 7);
+            // await queryRunner.manager.delete(KlaviyoEventLog, {
+            //     createdAt: LessThan(threshold),
+            // });
 
             await queryRunner.commitTransaction();
 
