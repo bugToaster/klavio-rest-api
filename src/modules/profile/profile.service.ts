@@ -1,15 +1,16 @@
-import { Injectable, HttpException, Logger } from '@nestjs/common';
-import { axiosKlaviyo } from '@/common/axios-instance';
-import { AnalyticsService } from '../analytics/analytics.service';
-import { MetricService } from '../metric/metric.service';
-import { KlaviyoMetric } from '../interfaces/klaviyo-metric.interface';
+import {Injectable, HttpException, Logger} from '@nestjs/common';
+import {axiosKlaviyo} from '@/common/axios-instance';
+import {AnalyticsService} from '../analytics/analytics.service';
+import {MetricService} from '../metric/metric.service';
+import {KlaviyoMetric} from '../interfaces/klaviyo-metric.interface';
 
 @Injectable()
 export class ProfileService {
     private readonly apiKey = process.env.KLAVIYO_PRIVATE_API_KEY;
     private readonly logger = new Logger(ProfileService.name);
 
-    constructor(private readonly analyticsService: AnalyticsService,private readonly metricService: MetricService, ) {}
+    constructor(private readonly analyticsService: AnalyticsService, private readonly metricService: MetricService,) {
+    }
 
     async getProfileByEmail(email: string): Promise<any> {
         try {
@@ -87,5 +88,86 @@ export class ProfileService {
             );
         }
     }
+    async mergeProfiles(primaryProfileId: string, duplicateProfileId: string): Promise<any> {
+        try {
+            const response = await axiosKlaviyo.post(
+                'profile-merge',
+                {
+                    data: {
+                        type: 'profile-merge',
+                        id: primaryProfileId,
+                        relationships: {
+                            profiles: {
+                                data: [
+                                    {
+                                        type: 'profile',
+                                        id: duplicateProfileId,
+                                    },
+                                ],
+                            },
+                        },
+                    },
+                },
+                {
+                    headers: {
+                        Authorization: `Klaviyo-API-Key ${this.apiKey}`,
+                        'Content-Type': 'application/vnd.api+json',
+                        Accept: 'application/vnd.api+json',
+                        revision: '2023-10-15', // required by Klaviyo API
+                    },
+                }
+            );
+
+            return {
+                success: true,
+                message: 'Profiles merged successfully',
+                data: response.data,
+            };
+        } catch (err: any) {
+            this.logger.error(
+                `Failed to merge profiles: ${primaryProfileId} <- ${duplicateProfileId}`,
+                err?.response?.data || err.message
+            );
+            throw new HttpException(
+                {
+                    message: 'Failed to merge profiles',
+                    error: err?.response?.data || err.message,
+                },
+                err?.response?.status || 500
+            );
+        }
+    }
+
+
+    async getAllProfiles(query: { size?: number; cursor?: string }): Promise<any> {
+        try {
+            const params: any = {};
+            if (query.size) params['page[size]'] = query.size;
+            if (query.cursor) params['page[cursor]'] = query.cursor;
+
+            const res = await axiosKlaviyo.get('profiles', {
+                headers: {
+                    Authorization: `Klaviyo-API-Key ${this.apiKey}`,
+                },
+                params,
+            });
+
+            return {
+                success: true,
+                data: res.data?.data || [],
+                pagination: res.data?.links || {},
+            };
+        } catch (err: any) {
+            this.logger.error('Failed to fetch all profiles', err?.response?.data || err.message);
+            throw new HttpException(
+                {
+                    message: 'Failed to fetch profiles',
+                    error: err?.response?.data || err.message,
+                },
+                err?.response?.status || 500
+            );
+        }
+    }
+
 
 }

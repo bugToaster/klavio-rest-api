@@ -1,11 +1,28 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Post, Query, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { ProfileService } from './profile.service';
+import { ApiBody } from '@nestjs/swagger';
+
 
 @ApiTags('Profiles')
 @Controller('profiles')
 export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
+
+    @Get('all')
+    @ApiOperation({ summary: 'Get paginated list of all Klaviyo profiles' })
+    @ApiQuery({ name: 'size', required: false, type: Number, description: 'Number of profiles per page' })
+    @ApiQuery({ name: 'cursor', required: false, type: String, description: 'Pagination cursor from previous request' })
+    @ApiResponse({ status: 200, description: 'Paginated list of profiles returned' })
+    @ApiResponse({ status: 500, description: 'Error fetching profiles' })
+    getAllProfiles(
+        @Query('size') size?: number,
+        @Query('cursor') cursor?: string
+    ) {
+        return this.profileService.getAllProfiles({ size, cursor });
+    }
+
+
 
     @Get('by-email')
     @ApiOperation({ summary: 'Get Klaviyo profile attributes by email' })
@@ -25,5 +42,27 @@ export class ProfileController {
     @ApiResponse({ status: 500, description: 'Error fetching metrics' })
     getProfileMetrics(@Query('email') email: string) {
         return this.profileService.getProfileMetricsByEmail(email);
+    }
+
+
+
+    @Post('merge')
+    @ApiOperation({ summary: 'Merge two Klaviyo profiles' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                primaryProfileId: { type: 'string' },
+                duplicateProfileId: { type: 'string' },
+            },
+            required: ['primaryProfileId', 'duplicateProfileId'],
+        },
+    })
+    @ApiResponse({ status: 200, description: 'Profiles merged successfully' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 500, description: 'Error merging profiles' })
+    mergeProfiles(@Body() body: { primaryProfileId: string; duplicateProfileId: string }) {
+        const { primaryProfileId, duplicateProfileId } = body;
+        return this.profileService.mergeProfiles(primaryProfileId, duplicateProfileId);
     }
 }
