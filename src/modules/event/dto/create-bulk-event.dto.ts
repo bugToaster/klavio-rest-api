@@ -1,11 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ValidateNested, ArrayNotEmpty } from 'class-validator';
 import { CreateEventDto } from './create-event.dto';
 
 export class CreateBulkEventDto {
     @ApiProperty({ type: [CreateEventDto] })
-    @IsArray()
+    @ArrayNotEmpty()
     @ValidateNested({ each: true })
     @Type(() => CreateEventDto)
     events: CreateEventDto[];
