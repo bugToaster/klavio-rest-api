@@ -5,14 +5,23 @@ export class KlaviyoEventLog {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column()
+    @Column({ nullable: true })
     eventName: string;
 
-    @Column({ type: 'jsonb' })
-    eventAttributes: Record<string, any>;
+    @Column({ type: 'jsonb', nullable: true })
+    eventAttributes: any;
 
-    @Column({ type: 'jsonb' })
-    profileAttributes: Record<string, any>;
+    @Column({ type: 'jsonb', nullable: true })
+    profileAttributes: any;
+
+    @Column({ nullable: true })
+    timestamp: Date;
+
+    @Column({ type: 'float', nullable: true })
+    value: number;
+
+    @Column({ nullable: true })
+    uniqueId: string;
 
     @CreateDateColumn()
     createdAt: Date;

@@ -50,12 +50,67 @@ export class EventService {
 
     async sendEvents(events: CreateEventDto | CreateEventDto[]) {
         const isBulk = Array.isArray(events);
-        const payload = isBulk
-            ? this._buildBulkPayload(events)
-            : this._buildSinglePayload(events as CreateEventDto);
-        const endpoint = isBulk ? 'event-bulk-create-jobs' : 'events';
-        return this._callKlaviyoAPI(endpoint, payload, 'post');
+        const queryRunner = this.dataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+
+        try {
+            if (isBulk) {
+                for (const event of events) {
+                    await queryRunner.manager.save(KlaviyoEventLog, {
+                        eventName: event.eventName,
+                        eventAttributes: event.eventAttributes,
+                        profileAttributes: event.profileAttributes,
+                        timestamp: event.timestamp,
+                        value: event.value,
+                        uniqueId: event.uniqueId,
+                    });
+                }
+            } else {
+                const event = events as CreateEventDto;
+                await queryRunner.manager.save(KlaviyoEventLog, {
+                    eventName: event.eventName,
+                    eventAttributes: event.eventAttributes,
+                    profileAttributes: event.profileAttributes,
+                    timestamp: event.timestamp,
+                    value: event.value,
+                    uniqueId: event.uniqueId,
+                });
+            }
+
+            const payload = isBulk
+                ? this._buildBulkPayload(events)
+                : this._buildSinglePayload(events as CreateEventDto);
+            const endpoint = isBulk ? 'event-bulk-create-jobs' : 'events';
+            const response = await this._callKlaviyoAPI(endpoint, payload, 'post');
+
+            await queryRunner.commitTransaction();
+
+            return {
+                success: true,
+                message: isBulk
+                    ? 'Bulk events sent to Klaviyo and logged successfully'
+                    : 'Event sent to Klaviyo and logged successfully',
+                data: response,
+            };
+        } catch (error) {
+            await queryRunner.rollbackTransaction();
+            const errResponse = error?.response?.data ?? error.message;
+            this.logger.error(`[Klaviyo Send Event Error]`, error);
+
+            throw new HttpException(
+                {
+                    success: false,
+                    message: 'Failed to send event to Klaviyo',
+                    error: errResponse,
+                },
+                error?.response?.status || 500
+            );
+        } finally {
+            await queryRunner.release();
+        }
     }
+
 
     private _buildSinglePayload(event: CreateEventDto) {
         return {
